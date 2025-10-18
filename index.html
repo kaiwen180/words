@@ -12,7 +12,7 @@
             box-sizing: border-box;
         }
 
-        body {
+        html, body {
             background: #000;
             color: #fff;
             font-family: "Helvetica Neue", Helvetica, Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
@@ -21,6 +21,10 @@
             -moz-user-select: none;
             -ms-user-select: none;
             user-select: none;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
         }
 
         .slide-container {
@@ -30,37 +34,52 @@
         }
 
         .slide {
-            display: none;
+            display: table;
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             text-align: center;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            -webkit-transition: opacity 0.5s ease-in-out;
+            -moz-transition: opacity 0.5s ease-in-out;
+            -ms-transition: opacity 0.5s ease-in-out;
+            pointer-events: none;
         }
 
         .slide.active {
-            display: table;
+            opacity: 1;
+            pointer-events: auto;
         }
 
         .slide-content {
             display: table-cell;
             vertical-align: middle;
-            padding: 40px;
+            padding: 5vh 5vw;
         }
 
-        .slide h1 {
-            font-size: 72px;
-            line-height: 1.4;
+        .slide {
+            line-height: 1.3;
             font-weight: normal;
-            margin: 20px 0;
+            margin: 2vh 0;
+        }
+        .slide h1 {
+            font-size: 12vmin;
+        }
+        .slide h2 {
+            font-size: 10vmin;
+        }
+        .slide h3 {
+            font-size: 8vmin;
         }
 
         .slide hr {
             border: none;
             border-top: 2px solid #fff;
             width: 200px;
-            margin: 40px auto;
+            margin: 4vh auto;
         }
 
         .slide-indicator {
@@ -103,25 +122,52 @@
             border-color: #fff;
         }
 
-        @media (max-width: 768px) {
-            .slide h1 {
-                font-size: 48px;
-            }
+        .btn.small {
+            padding: 8px 12px;
+            font-size: 14px;
         }
 
-        @media (max-width: 480px) {
-            .slide h1 {
-                font-size: 36px;
-            }
+        .timing-controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+        }
 
-            .slide-content {
-                padding: 20px;
-            }
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            z-index: 999;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: #fff;
+            transition: width 0.1s linear;
+            -webkit-transition: width 0.1s linear;
+            -moz-transition: width 0.1s linear;
+            -ms-transition: width 0.1s linear;
         }
     </style>
 </head>
 
 <body>
+    <div class="progress-bar">
+        <div class="progress-bar-fill" id="progress-bar-fill"></div>
+    </div>
+
+    <div class="timing-controls">
+        <button class="btn small" data-duration="3000">3s</button>
+        <button class="btn small active" data-duration="30000">30s</button>
+        <button class="btn small" data-duration="60000">60s</button>
+        <button class="btn small" data-duration="300000">5m</button>
+    </div>
+
     <div class="slide-container">
         <div class="slide active">
             <div class="slide-content">
@@ -133,6 +179,48 @@
             <div class="slide-content">
                 <h1>良药苦口利于病</h1>
                 <h1>忠言逆耳利于行</h1>
+            </div>
+        </div>
+
+        <div class="slide">
+            <div class="slide-content">
+                <h3>1. 积极主动<br>Be Proactive</h3>
+            </div>
+        </div>
+
+        <div class="slide">
+            <div class="slide-content">
+                <h3>2. 以终为始<br>Begin with the End in Mind</h3>
+            </div>
+        </div>
+
+        <div class="slide">
+            <div class="slide-content">
+                <h3>3. 要事第一<br>Put First Things First</h3>
+            </div>
+        </div>
+
+        <div class="slide">
+            <div class="slide-content">
+                <h3>4. 双赢思维<br>Think Win-Win</h3>
+            </div>
+        </div>
+
+        <div class="slide">
+            <div class="slide-content">
+                <h3>5. 知彼解己<br>Seek First to Understand,<br>Then to Be Understood</h3>
+            </div>
+        </div>
+
+        <div class="slide">
+            <div class="slide-content">
+                <h3>6. 统合综效<br>Synergize</h3>
+            </div>
+        </div>
+
+        <div class="slide">
+            <div class="slide-content">
+                <h3>7. 不断更新<br>Sharpen the Saw</h3>
             </div>
         </div>
     </div>
@@ -154,17 +242,16 @@
             var touchStartX = 0;
             var touchEndX = 0;
             var autoPlayTimer = null;
+            var progressTimer = null;
             var isAutoPlaying = true;
+            var duration = 30000; // Default 30 seconds
+            var progressStartTime = 0;
 
             document.getElementById('total-slides').textContent = totalSlides;
 
             function showSlide (index) {
-                if (index < 0) {
-                    index = 0;
-                }
-                if (index >= totalSlides) {
-                    index = totalSlides - 1;
-                }
+                // Wrap around: handle negative and out-of-bounds indices
+                index = ((index % totalSlides) + totalSlides) % totalSlides;
 
                 for (var i = 0; i < slides.length; i++) {
                     slides[i].className = 'slide';
@@ -176,18 +263,11 @@
             }
 
             function nextSlide () {
-                if (currentSlide < totalSlides - 1) {
-                    showSlide(currentSlide + 1);
-                } else {
-                    // Loop back to first slide
-                    showSlide(0);
-                }
+                showSlide(currentSlide + 1);
             }
 
             function prevSlide () {
-                if (currentSlide > 0) {
-                    showSlide(currentSlide - 1);
-                }
+                showSlide(currentSlide - 1);
             }
 
             // Keyboard navigation
@@ -238,25 +318,59 @@
                 }
             });
 
+            // Progress bar update
+            function updateProgress () {
+                if (!isAutoPlaying) {
+                    document.getElementById('progress-bar-fill').style.width = '0%';
+                    return;
+                }
+
+                var elapsed = Date.now() - progressStartTime;
+                var progress = Math.min((elapsed / duration) * 100, 100);
+                document.getElementById('progress-bar-fill').style.width = progress + '%';
+            }
+
+            function resetProgress () {
+                progressStartTime = Date.now();
+                document.getElementById('progress-bar-fill').style.width = '0%';
+            }
+
             // Auto-play functions
             function startAutoPlay () {
                 if (autoPlayTimer) {
-                    clearInterval(autoPlayTimer);
+                    clearTimeout(autoPlayTimer);
                 }
-                autoPlayTimer = setInterval(function () {
+                if (progressTimer) {
+                    clearInterval(progressTimer);
+                }
+
+                resetProgress();
+
+                autoPlayTimer = setTimeout(function () {
                     nextSlide();
-                }, 3000);
+                    if (isAutoPlaying) {
+                        startAutoPlay();
+                    }
+                }, duration);
+
+                progressTimer = setInterval(updateProgress, 100);
+
                 isAutoPlaying = true;
                 document.getElementById('autoplay-btn').className = 'btn active';
             }
 
             function stopAutoPlay () {
                 if (autoPlayTimer) {
-                    clearInterval(autoPlayTimer);
+                    clearTimeout(autoPlayTimer);
                     autoPlayTimer = null;
+                }
+                if (progressTimer) {
+                    clearInterval(progressTimer);
+                    progressTimer = null;
                 }
                 isAutoPlaying = false;
                 document.getElementById('autoplay-btn').className = 'btn';
+                document.getElementById('progress-bar-fill').style.width = '0%';
             }
 
             function toggleAutoPlay () {
@@ -309,6 +423,27 @@
                 e.stopPropagation();
                 toggleFullscreen();
             });
+
+            // Timing control buttons
+            var timingButtons = document.querySelectorAll('.timing-controls .btn');
+            for (var i = 0; i < timingButtons.length; i++) {
+                timingButtons[i].addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    var newDuration = parseInt(this.getAttribute('data-duration'));
+
+                    // Update active state
+                    for (var j = 0; j < timingButtons.length; j++) {
+                        timingButtons[j].className = 'btn small';
+                    }
+                    this.className = 'btn small active';
+
+                    // Update duration and restart if playing
+                    duration = newDuration;
+                    if (isAutoPlaying) {
+                        startAutoPlay();
+                    }
+                });
+            }
 
             // Start auto-play on load
             startAutoPlay();
