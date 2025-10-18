@@ -4,15 +4,14 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
 	<title>警句</title>
 
 	<link rel="stylesheet" href="dist/reset.css">
 	<link rel="stylesheet" href="dist/reveal.css">
 	<link rel="stylesheet" href="dist/theme/black.css">
-
-	<!-- Theme used for syntax highlighted code -->
-	<link rel="stylesheet" href="plugin/highlight/monokai.css">
 	
 	<style>
 		.auto-play-btn {
@@ -28,21 +27,73 @@
 			cursor: pointer;
 			font-size: 14px;
 			font-weight: bold;
+			/* Add vendor prefixes for older browsers */
+			-webkit-transition: background 0.3s ease;
+			-moz-transition: background 0.3s ease;
+			-o-transition: background 0.3s ease;
 			transition: background 0.3s ease;
+			/* Ensure button is visible on all backgrounds */
+			box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+			/* Better touch target for mobile */
+			min-width: 44px;
+			min-height: 44px;
 		}
-		
+
 		.auto-play-btn:hover {
 			background: #005a9e;
 		}
-		
+
 		.auto-play-btn:active {
+			/* Add vendor prefixes for transform */
+			-webkit-transform: scale(0.98);
+			-moz-transform: scale(0.98);
+			-ms-transform: scale(0.98);
+			-o-transform: scale(0.98);
 			transform: scale(0.98);
+		}
+
+		/* Loading indicator for older browsers */
+		.loading-indicator {
+			position: fixed;
+			top: 50%;
+			left: 50%;
+			-webkit-transform: translate(-50%, -50%);
+			-moz-transform: translate(-50%, -50%);
+			-ms-transform: translate(-50%, -50%);
+			-o-transform: translate(-50%, -50%);
+			transform: translate(-50%, -50%);
+			background: rgba(0, 0, 0, 0.8);
+			color: white;
+			padding: 20px 40px;
+			border-radius: 8px;
+			font-size: 18px;
+			z-index: 10000;
+			display: none;
+		}
+
+		.loading-indicator.show {
+			display: block;
+		}
+
+		/* Ensure the reveal container is properly positioned */
+		.reveal {
+			position: relative;
+			width: 100%;
+			height: 100vh;
+		}
+
+		/* Fallback for older browsers that might have issues with viewport units */
+		html, body {
+			height: 100%;
+			margin: 0;
+			padding: 0;
 		}
 	</style>
 </head>
 
 <body>
-	<button class="auto-play-btn" id="autoPlayBtn">🎬 Start Auto Play</button>
+	<div class="loading-indicator" id="loadingIndicator">Loading presentation...</div>
+	<button class="auto-play-btn" id="autoPlayBtn" style="display: none;">🎬 Start Auto Play</button>
 	<div class="reveal">
 		<div class="slides">
 			<section data-markdown="words.md" data-separator="^---------" data-separator-vertical="^------"
@@ -59,89 +110,244 @@ just a placeholder, real content is in words.md
 		</div>
 	</div>
 
-	<script type="module">
-		import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs'
-		mermaid.initialize({ startOnLoad: true, theme: 'dark' });
-	</script>
 	<script src="dist/reveal.js"></script>
-	<script src="plugin/notes/notes.js"></script>
 	<script src="plugin/markdown/markdown.js"></script>
-	<script src="plugin/highlight/highlight.js"></script>
-	<script src="plugin/zoom/zoom.js"></script>
 	<script>
-		// More info about initialization & config:
-		// - https://revealjs.com/initialization/
-		// - https://revealjs.com/config/
-		Reveal.initialize({
-			hash: true,
-			// Auto-slide configuration
-			autoSlide: 0, // Start with auto-slide disabled
-			autoSlideStoppable: true,
-			loop: true, // Enable infinite looping
+		// Global state for initialization
+		var revealInitialized = false;
+		var initAttempts = 0;
+		var maxInitAttempts = 100; // Increased from 50 to give more time for slow devices
 
-			// Learn about plugins: https://revealjs.com/plugins/
-			plugins: [
-				RevealMarkdown,
-				// https://highlightjs.readthedocs.io/en/latest/language-guide.html#highlighting-overview
-				RevealHighlight,
-				RevealNotes,
-				RevealZoom,
-			],
-			markdown: {
-				// smartypants: true,
+		// Fix viewport height for iOS devices
+		function fixViewportHeight() {
+			// Get the actual viewport height
+			var vh = window.innerHeight * 0.01;
+			// Set CSS custom property (fallback for older browsers that don't support it)
+			if (document.documentElement.style.setProperty) {
+				document.documentElement.style.setProperty('--vh', vh + 'px');
 			}
-		});
 
-		// Auto-play button functionality
-		document.getElementById('autoPlayBtn').addEventListener('click', function() {
-			const btn = this;
-			
-			// Request fullscreen
-			if (document.documentElement.requestFullscreen) {
-				document.documentElement.requestFullscreen();
-			} else if (document.documentElement.webkitRequestFullscreen) {
-				document.documentElement.webkitRequestFullscreen();
-			} else if (document.documentElement.msRequestFullscreen) {
-				document.documentElement.msRequestFullscreen();
+			// Also set the reveal container height directly for older browsers
+			var revealEl = document.querySelector('.reveal');
+			if (revealEl) {
+				revealEl.style.height = window.innerHeight + 'px';
 			}
-			
-			// Start auto-slide with 30 second intervals
-			Reveal.configure({
-				autoSlide: 3000, // 3 seconds
-				autoSlideStoppable: true
-			});
-			
-			// Hide the button during presentation
-			btn.style.display = 'none';
-			
-			// Go to first slide and start presentation
-			Reveal.slide(0);
-		});
+		}
+
+		// Show loading indicator
+		function showLoading() {
+			var loader = document.getElementById('loadingIndicator');
+			if (loader) {
+				loader.className = 'loading-indicator show';
+			}
+		}
+
+		// Hide loading indicator
+		function hideLoading() {
+			var loader = document.getElementById('loadingIndicator');
+			if (loader) {
+				loader.className = 'loading-indicator';
+			}
+		}
+
+		// Show the auto-play button
+		function showAutoPlayButton() {
+			var btn = document.getElementById('autoPlayBtn');
+			if (btn) {
+				btn.style.display = 'block';
+			}
+		}
+
+		// Wait for Reveal.js and markdown plugin to be fully loaded
+		function initializeReveal() {
+			initAttempts++;
+
+			// Check if we've exceeded max attempts
+			if (initAttempts > maxInitAttempts) {
+				hideLoading();
+				var missing = [];
+				if (typeof Reveal === 'undefined') missing.push('Reveal.js');
+				if (typeof RevealMarkdown === 'undefined') missing.push('Markdown plugin');
+				alert('Failed to load: ' + missing.join(', ') + '. Please refresh the page.');
+				return;
+			}
+
+			// Check if both Reveal and Markdown are loaded
+			if (typeof Reveal === 'undefined' || typeof RevealMarkdown === 'undefined') {
+				// Retry in 200ms if scripts aren't loaded yet
+				setTimeout(initializeReveal, 200);
+				return;
+			}
+
+			// All scripts loaded, try to initialize
+			try {
+				// More info about initialization & config:
+				// - https://revealjs.com/initialization/
+				// - https://revealjs.com/config/
+				Reveal.initialize({
+					hash: true,
+					// Auto-slide configuration
+					autoSlide: 0, // Start with auto-slide disabled
+					autoSlideStoppable: true,
+					loop: true, // Enable infinite looping
+					// Disable features that might cause issues on old browsers
+					embedded: false,
+					touch: true,
+					// Only load the markdown plugin (essential for loading words.md)
+					plugins: [RevealMarkdown],
+					markdown: {}
+				});
+
+				// Listen for the ready event
+				Reveal.on('ready', function() {
+					revealInitialized = true;
+					hideLoading();
+					showAutoPlayButton();
+					// Fix viewport one more time after reveal is ready
+					fixViewportHeight();
+				});
+
+				// Fallback: if ready event doesn't fire, show button anyway after 2 seconds
+				setTimeout(function() {
+					if (!revealInitialized) {
+						revealInitialized = true;
+						hideLoading();
+						showAutoPlayButton();
+						fixViewportHeight();
+					}
+				}, 2000);
+
+			} catch (error) {
+				hideLoading();
+				alert('Error initializing presentation: ' + error.message);
+			}
+		}
+
+		// Auto-play button functionality - using older browser compatible syntax
+		function startAutoPlay() {
+			var btn = document.getElementById('autoPlayBtn');
+
+			// Check if Reveal.js is available
+			if (typeof Reveal === 'undefined' || !revealInitialized) {
+				alert('Presentation not ready yet. Please try again in a moment.');
+				return;
+			}
+
+			// Request fullscreen with better fallback support
+			var element = document.documentElement;
+			try {
+				if (element.requestFullscreen) {
+					element.requestFullscreen();
+				} else if (element.webkitRequestFullscreen) {
+					element.webkitRequestFullscreen();
+				} else if (element.webkitRequestFullScreen) {
+					// Older Safari
+					element.webkitRequestFullScreen();
+				} else if (element.mozRequestFullScreen) {
+					element.mozRequestFullScreen();
+				} else if (element.msRequestFullscreen) {
+					element.msRequestFullscreen();
+				}
+			} catch (error) {
+				// Fullscreen might fail on some browsers, continue anyway
+			}
+
+			// Start auto-slide with 3 second intervals
+			try {
+				Reveal.configure({
+					autoSlide: 3000,
+					autoSlideStoppable: true
+				});
+
+				// Hide the button during presentation
+				if (btn) {
+					btn.style.display = 'none';
+				}
+
+				// Go to first slide and start presentation
+				Reveal.slide(0, 0, 0);
+			} catch (error) {
+				alert('Error starting auto-play: ' + error.message);
+			}
+		}
 
 		// Show button again when exiting fullscreen
-		document.addEventListener('fullscreenchange', function() {
-			if (!document.fullscreenElement) {
-				document.getElementById('autoPlayBtn').style.display = 'block';
+		function handleFullscreenChange() {
+			var isFullscreen = document.fullscreenElement ||
+				document.webkitFullscreenElement ||
+				document.webkitCurrentFullScreenElement ||
+				document.mozFullScreenElement ||
+				document.msFullscreenElement;
+
+			if (!isFullscreen) {
+				var btn = document.getElementById('autoPlayBtn');
+				if (btn) {
+					btn.style.display = 'block';
+				}
 				// Stop auto-slide when exiting fullscreen
-				Reveal.configure({ autoSlide: 0 });
+				if (typeof Reveal !== 'undefined' && revealInitialized) {
+					try {
+						Reveal.configure({ autoSlide: 0 });
+					} catch (error) {
+						// Ignore errors
+					}
+				}
 			}
-		});
+		}
 
-		// Handle webkit fullscreen change (Safari)
-		document.addEventListener('webkitfullscreenchange', function() {
-			if (!document.webkitFullscreenElement) {
-				document.getElementById('autoPlayBtn').style.display = 'block';
-				Reveal.configure({ autoSlide: 0 });
+		// Wait for DOM to be ready before adding event listeners
+		function initializeEventListeners() {
+			// Add click event listener
+			var btn = document.getElementById('autoPlayBtn');
+			if (btn) {
+				// Use older event listener syntax for better compatibility
+				if (btn.addEventListener) {
+					btn.addEventListener('click', startAutoPlay, false);
+				} else if (btn.attachEvent) {
+					// IE8 and older
+					btn.attachEvent('onclick', startAutoPlay);
+				}
 			}
-		});
 
-		// Handle IE/Edge fullscreen change
-		document.addEventListener('MSFullscreenChange', function() {
-			if (!document.msFullscreenElement) {
-				document.getElementById('autoPlayBtn').style.display = 'block';
-				Reveal.configure({ autoSlide: 0 });
+			// Add fullscreen change listeners with better browser support
+			if (document.addEventListener) {
+				document.addEventListener('fullscreenchange', handleFullscreenChange, false);
+				document.addEventListener('webkitfullscreenchange', handleFullscreenChange, false);
+				document.addEventListener('mozfullscreenchange', handleFullscreenChange, false);
+				document.addEventListener('MSFullscreenChange', handleFullscreenChange, false);
 			}
-		});
+		}
+
+		// Initialize everything when DOM is ready
+		function startInitialization() {
+			// Fix viewport height for iOS
+			fixViewportHeight();
+
+			// Add resize listener to fix viewport on orientation change
+			if (window.addEventListener) {
+				window.addEventListener('resize', fixViewportHeight, false);
+				window.addEventListener('orientationchange', fixViewportHeight, false);
+			} else if (window.attachEvent) {
+				window.attachEvent('onresize', fixViewportHeight);
+			}
+
+			showLoading();
+			initializeReveal();
+			initializeEventListeners();
+		}
+
+		// Cross-browser DOM ready check
+		if (document.readyState === 'loading') {
+			if (document.addEventListener) {
+				document.addEventListener('DOMContentLoaded', startInitialization, false);
+			} else {
+				// Fallback for older browsers
+				window.onload = startInitialization;
+			}
+		} else {
+			// DOM is already ready
+			startInitialization();
+		}
 	</script>
 </body>
 
