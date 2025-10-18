@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+	<title>警句</title>
+
+	<link rel="stylesheet" href="dist/reset.css">
+	<link rel="stylesheet" href="dist/reveal.css">
+	<link rel="stylesheet" href="dist/theme/black.css">
+
+	<!-- Theme used for syntax highlighted code -->
+	<link rel="stylesheet" href="plugin/highlight/monokai.css">
+	
+	<style>
+		.auto-play-btn {
+			position: fixed;
+			top: 20px;
+			right: 20px;
+			z-index: 1000;
+			padding: 12px 24px;
+			background: #007acc;
+			color: white;
+			border: none;
+			border-radius: 6px;
+			cursor: pointer;
+			font-size: 14px;
+			font-weight: bold;
+			transition: background 0.3s ease;
+		}
+		
+		.auto-play-btn:hover {
+			background: #005a9e;
+		}
+		
+		.auto-play-btn:active {
+			transform: scale(0.98);
+		}
+	</style>
+</head>
+
+<body>
+	<button class="auto-play-btn" id="autoPlayBtn">🎬 Start Auto Play</button>
+	<div class="reveal">
+		<div class="slides">
+			<section data-markdown="words.md" data-separator="^---------" data-separator-vertical="^------"
+				data-separator-notes="^Note:" data-charset="utf-8">
+				<textarea data-template>
+## Slide 1
+just a placeholder, real content is in words.md
+---
+## Slide 2
+---
+## Slide 3
+				</textarea>
+			</section>
+		</div>
+	</div>
+
+	<script type="module">
+		import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs'
+		mermaid.initialize({ startOnLoad: true, theme: 'dark' });
+	</script>
+	<script src="dist/reveal.js"></script>
+	<script src="plugin/notes/notes.js"></script>
+	<script src="plugin/markdown/markdown.js"></script>
+	<script src="plugin/highlight/highlight.js"></script>
+	<script src="plugin/zoom/zoom.js"></script>
+	<script>
+		// More info about initialization & config:
+		// - https://revealjs.com/initialization/
+		// - https://revealjs.com/config/
+		Reveal.initialize({
+			hash: true,
+			// Auto-slide configuration
+			autoSlide: 0, // Start with auto-slide disabled
+			autoSlideStoppable: true,
+			loop: true, // Enable infinite looping
+
+			// Learn about plugins: https://revealjs.com/plugins/
+			plugins: [
+				RevealMarkdown,
+				// https://highlightjs.readthedocs.io/en/latest/language-guide.html#highlighting-overview
+				RevealHighlight,
+				RevealNotes,
+				RevealZoom,
+			],
+			markdown: {
+				// smartypants: true,
+			}
+		});
+
+		// Auto-play button functionality
+		document.getElementById('autoPlayBtn').addEventListener('click', function() {
+			const btn = this;
+			
+			// Request fullscreen
+			if (document.documentElement.requestFullscreen) {
+				document.documentElement.requestFullscreen();
+			} else if (document.documentElement.webkitRequestFullscreen) {
+				document.documentElement.webkitRequestFullscreen();
+			} else if (document.documentElement.msRequestFullscreen) {
+				document.documentElement.msRequestFullscreen();
+			}
+			
+			// Start auto-slide with 30 second intervals
+			Reveal.configure({
+				autoSlide: 3000, // 3 seconds
+				autoSlideStoppable: true
+			});
+			
+			// Hide the button during presentation
+			btn.style.display = 'none';
+			
+			// Go to first slide and start presentation
+			Reveal.slide(0);
+		});
+
+		// Show button again when exiting fullscreen
+		document.addEventListener('fullscreenchange', function() {
+			if (!document.fullscreenElement) {
+				document.getElementById('autoPlayBtn').style.display = 'block';
+				// Stop auto-slide when exiting fullscreen
+				Reveal.configure({ autoSlide: 0 });
+			}
+		});
+
+		// Handle webkit fullscreen change (Safari)
+		document.addEventListener('webkitfullscreenchange', function() {
+			if (!document.webkitFullscreenElement) {
+				document.getElementById('autoPlayBtn').style.display = 'block';
+				Reveal.configure({ autoSlide: 0 });
+			}
+		});
+
+		// Handle IE/Edge fullscreen change
+		document.addEventListener('MSFullscreenChange', function() {
+			if (!document.msFullscreenElement) {
+				document.getElementById('autoPlayBtn').style.display = 'block';
+				Reveal.configure({ autoSlide: 0 });
+			}
+		});
+	</script>
+</body>
+
+</html>
