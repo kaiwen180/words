@@ -13,11 +13,23 @@
         <div class="progress-bar-fill" id="progress-bar-fill"></div>
     </div>
 
-    <div class="timing-controls">
-        <button class="btn small" data-duration="3000">3s</button>
-        <button class="btn small active" data-duration="30000">30s</button>
-        <button class="btn small" data-duration="60000">60s</button>
-        <button class="btn small" data-duration="300000">5m</button>
+    <div class="control-panel" id="control-panel">
+        <div class="timing-controls">
+            <button class="btn small" data-duration="3000">3s</button>
+            <button class="btn small active" data-duration="30000">30s</button>
+            <button class="btn small" data-duration="60000">60s</button>
+            <button class="btn small" data-duration="300000">5m</button>
+        </div>
+
+        <div class="main-controls">
+            <button class="btn" id="autoplay-btn">Auto Play</button>
+            <button class="btn" id="autohide-btn">Auto Hide</button>
+            <button class="btn" id="fullscreen-btn">Fullscreen</button>
+        </div>
+
+        <div class="slide-indicator">
+            <span id="current-slide">1</span> / <span id="total-slides">2</span>
+        </div>
     </div>
 
     <div class="slide-container">
@@ -75,15 +87,6 @@
                 <h3>7. 不断更新<br>Sharpen the Saw</h3>
             </div>
         </div>
-    </div>
-
-    <div class="controls">
-        <button class="btn" id="fullscreen-btn">Fullscreen</button>
-        <button class="btn active" id="autoplay-btn">Auto Play</button>
-    </div>
-
-    <div class="slide-indicator">
-        <span id="current-slide">1</span> / <span id="total-slides">2</span>
     </div>
 
     <script src="script.js"></script>
